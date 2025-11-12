@@ -20,37 +20,62 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // ❌ Disable CSRF (since JWT is stateless)
                 .csrf(csrf -> csrf.disable())
+
+                // ✅ Allow CORS (optional but helps with testing)
+                .cors(cors -> {})
+
+                // ✅ Define authorization rules
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ Public endpoints (no token needed)
+
+                        // ✅ Public user endpoints
                         .requestMatchers("/api/users/register", "/api/users/login").permitAll()
 
-                        // ✅ Swagger endpoints (allow access without authentication)
+                        // ✅ Swagger endpoints
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
 
-                        // ✅ Course endpoints — only INSTRUCTOR or ADMIN can create/update/delete
-                        .requestMatchers("/api/courses/create", "/api/courses/update/**", "/api/courses/delete/**")
-                        .hasAnyAuthority("ADMIN", "INSTRUCTOR")
+                        // ✅ Enrollment endpoints — make fully open for testing
+                        .requestMatchers("/api/enrollments/**").permitAll()
 
-                        // ✅ Everyone (logged in) can view courses
-                        .requestMatchers("/api/courses/**").authenticated()
+                        // ✅ Course endpoints — keep public for now
+                        .requestMatchers("/api/courses/**").permitAll()
 
-                        // ✅ Any other request requires authentication
+                        // ✅ Anything else must be authenticated
                         .anyRequest().authenticated()
                 )
+
+
+                // ✅ Stateless (no sessions)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // Add JWT filter before UsernamePasswordAuthenticationFilter
+        // ✅ Add JWT filter AFTER login/register are permitted
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
+    // ✅ Authentication manager (needed for login)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
+    @Bean
+    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
+        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
+        configuration.addAllowedOriginPattern("*");  // allow all origins (Swagger/Postman)
+        configuration.addAllowedHeader("*");         // allow all headers
+        configuration.addAllowedMethod("*");         // allow GET, POST, PUT, DELETE, etc.
+        configuration.setAllowCredentials(true);
+
+        org.springframework.web.cors.UrlBasedCorsConfigurationSource source =
+                new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
 }

@@ -19,22 +19,27 @@ public class CourseController {
         return courseService.createCourse(course);
     }
 
-    @GetMapping
+    @GetMapping("/all")
     public List<Course> getAllCourses() {
         return courseService.getAllCourses();
     }
-
+//
+//    @GetMapping("/{id}")
+//    public Course getCourseById(@PathVariable Long id) {
+//        return courseService.getCourseById(id).orElse(null);
+//    }
     @GetMapping("/{id}")
     public Course getCourseById(@PathVariable Long id) {
         return courseService.getCourseById(id);
     }
 
-    @PutMapping("/{id}")
+
+    @PutMapping("/update/{id}")
     public Course updateCourse(@PathVariable Long id, @RequestBody Course course) {
         return courseService.updateCourse(id, course);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/delete/{id}")
     public String deleteCourse(@PathVariable Long id) {
         courseService.deleteCourse(id);
         return "Course deleted successfully!";

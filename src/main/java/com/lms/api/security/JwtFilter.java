@@ -28,6 +28,20 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+
+        // ✅ Skip JWT validation for public endpoints
+        if (path.startsWith("/api/users/login") ||
+                path.startsWith("/api/users/register") ||
+                path.startsWith("/v3/api-docs") ||
+                path.startsWith("/swagger-ui") ||
+                path.startsWith("/swagger-ui.html") ||
+                path.startsWith("/api/enrollments") ||   // ✅ Add this line
+                path.startsWith("/api/courses")) {       // ✅ And this line
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -35,24 +49,20 @@ public class JwtFilter extends OncePerRequestFilter {
 
             if (jwtUtil.validateToken(token)) {
                 String email = jwtUtil.extractEmail(token);
-                String role = jwtUtil.extractRole(token); // ✅ Extract role from token
+                String role = jwtUtil.extractRole(token);
 
-                // ✅ Set authority based on role
                 SimpleGrantedAuthority authority = new SimpleGrantedAuthority(role);
-
-                // ✅ Correct principal type (UserDetails)
                 User principal = new User(email, "", List.of(authority));
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(principal, null, List.of(authority));
-
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                // ✅ Set the authentication in the security context
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }
 
         filterChain.doFilter(request, response);
     }
+
 }

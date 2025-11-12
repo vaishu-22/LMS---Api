@@ -40,4 +40,6 @@ public class Course {
 
     public String getInstructorName() { return instructorName; }
     public void setInstructorName(String instructorName) { this.instructorName = instructorName; }
+
+
 }
